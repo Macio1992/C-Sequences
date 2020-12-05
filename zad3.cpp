@@ -3,6 +3,10 @@
 
 using namespace std;
 
+bool checkIfEven(int n) {
+  return n % 2 == 0;
+}
+
 int obliczIloscKolumn() {
 	ifstream file("ciagi.txt");
 	string line;
@@ -46,7 +50,7 @@ void printArray (int *arr, int n) {
   cout << endl;
 }
 
-int policzDlugoscCiagu(int * ciag, int n) {
+int policzDlugoscCiagu(int *ciag, int n) {
 	int dlugosc = 0;
 
 	for (int i = 0; i < n; i++) {
@@ -98,7 +102,7 @@ int** transformArray(int **arr, int n, int m) {
   return newArr;
 }
 
-string zwrocNajdluzszyCiagRosnacy(int **sequences, int WIERSZE, int KOLUMNY) {
+string zwrocNajdluzszyCiagRosnacy(int **sequences, int WIERSZE, int KOLUMNY, char type) {
   int *najdluzszyCiag = createDynamicArray(KOLUMNY);
   int *indeksyNajdlCiagu = createDynamicArray(KOLUMNY);
 	int wiersz = 0;
@@ -136,18 +140,18 @@ string zwrocNajdluzszyCiagRosnacy(int **sequences, int WIERSZE, int KOLUMNY) {
 		}
 	}
 
-  // cout << "maxCiagi: "<<endl;
-  // printArray(maxCiag, KOLUMNY);
-  // cout << "maxCiagiIndeksy: "<<endl;
-  // printArray(maxCiagIndeksy, KOLUMNY);
-  // cout << "Max wiersz "<<maxWiersz<<endl;
-
 	string najdluzszyCiagString = "";
 
-	for (int i = 0; i < KOLUMNY && maxCiagIndeksy[i] != -1; i++) {
-    najdluzszyCiagString += "(" + to_string(maxWiersz+1) + "," + to_string(maxCiagIndeksy[i]+1) +")";
-    // cout << "to_string(maxCiagIndeksy[i]+1) "<< to_string(maxCiagIndeksy[i])<<endl;
-	}
+  int dlugoscMaxCiagu = policzDlugoscCiagu(maxCiag, KOLUMNY);
+  if (dlugoscMaxCiagu > 2) {
+    if (type == 'W') {
+      najdluzszyCiagString = "(" + to_string(maxWiersz+1) + "," + to_string(maxCiagIndeksy[0]+1) +")-(" + to_string(maxWiersz+1) + "," + to_string(maxCiagIndeksy[dlugoscMaxCiagu-1]+1) +")";
+    } else if (type == 'K') {
+      najdluzszyCiagString = "(" + to_string(maxCiagIndeksy[0]+1) + "," + to_string(maxWiersz+1) +")-(" + to_string(maxCiagIndeksy[dlugoscMaxCiagu-1]+1) + "," + to_string(maxWiersz+1) +")";
+    }
+  } else {
+    najdluzszyCiagString = "BRAK";
+  }
 
   delete [] najdluzszyCiag;
   delete [] indeksyNajdlCiagu;
@@ -157,12 +161,43 @@ string zwrocNajdluzszyCiagRosnacy(int **sequences, int WIERSZE, int KOLUMNY) {
 	return najdluzszyCiagString;
 }
 
+string znajdzPrzeplatance(int **sequences, int wiersze, int kolumny) {
+  string przeplatance = "";
+
+  for (int i = 0; i < kolumny; i++) {
+    int x = 0;
+    bool isEmptyCell = false;
+    for (int j = 0; j < wiersze; j++) {
+      if (sequences[j][i] != -1) {
+        if (checkIfEven(sequences[j][i])) {
+          x++;
+        } else {
+          x--;
+        }
+      } else {
+        isEmptyCell = true;
+      }
+    }
+    if (!isEmptyCell && x == 0) {
+      przeplatance += to_string(i+1) + " ";
+    }
+  }
+
+  return (przeplatance.length() != 0) ? przeplatance : "BRAK";
+}
+
 int main()
 {
   int allDigitsCount = countDigitsAmount();
   int * allDigits = new int[allDigitsCount];
 
   ifstream iFile("ciagi.txt");
+
+  if(iFile.fail()) {
+    cout << "Problem with opening the file";
+    return -1;
+  }
+
   int n;
   int retrieved;
   int i = 0;
@@ -204,17 +239,37 @@ int main()
     end = beg + elementsCount + 1;
   }
 
-  cout <<"Sequences: "<<endl;
-  for (int i = 0; i < WIERSZE; i++) {
-    for (int j = 0; j < KOLUMNY; j++) {
-      cout << sequences[i][j] << " ";
-    }
-    cout << endl;
-  }
+  ofstream ofFile("wyniki.txt");
 
-  cout <<"zwrocNajdluzszyCiagRosnacy "<<zwrocNajdluzszyCiagRosnacy(sequences, WIERSZE, KOLUMNY) << endl;
+  ofFile << zwrocNajdluzszyCiagRosnacy(sequences, WIERSZE, KOLUMNY, 'W') << endl;
   int **transformedArray = transformArray(sequences, WIERSZE, KOLUMNY);
-  cout <<"zwrocNajdluzszyCiagRosnacy "<<zwrocNajdluzszyCiagRosnacy(transformedArray, KOLUMNY, WIERSZE) << endl;
+  ofFile << zwrocNajdluzszyCiagRosnacy(transformedArray, KOLUMNY, WIERSZE, 'K') << endl;
+
+  int ileZalaman = 0;
+  int firstRow = 0;
+  for (int i = firstRow; i < firstRow+3; i++) {
+    int sum1 = 0, sum2 = 0, sum3 = 0;
+    for (int j = 0; j < KOLUMNY; j++) {
+      if (sequences[i][j] != -1) {
+        sum1++;
+      }
+      if (sequences[i+1][j] != -1) {
+        sum2++;
+      }
+      if (sequences[i+2][j] != -1) {
+        sum3++;
+      }
+    }
+    if (sum1 > sum2 && sum3 > sum2) {
+      ileZalaman++;
+    }
+  }
+  ofFile << ileZalaman << endl;
+
+  string przeplatance = znajdzPrzeplatance(sequences, WIERSZE, KOLUMNY);
+  ofFile << przeplatance << endl;
+
+  cout <<"Wyniki w pliku \"wyniki.txt\"" << endl;
 
   delete[] allDigits;
   for(int i = 0; i < WIERSZE; ++i) {
@@ -230,7 +285,8 @@ int main()
   for(int i = 0; i < KOLUMNY; ++i) {
     delete[] transformedArray[i];
   }
-  delete[] sequences;
+  delete[] transformedArray;
 
   iFile.close();
+  ofFile.close();
 }
