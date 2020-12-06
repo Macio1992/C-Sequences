@@ -189,7 +189,7 @@ string znajdzPrzeplatance(int **sequences, int wiersze, int kolumny) {
 int main()
 {
   int allDigitsCount = countDigitsAmount();
-  int * allDigits = new int[allDigitsCount];
+  int *allDigits = new int[allDigitsCount];
 
   ifstream iFile("ciagi.txt");
 
